@@ -24,9 +24,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Customize these values
-  const me = 'kalyani'; // Your GitHub username
-  const bro = 'tanmay'; // Your competitor's GitHub username
+  // Customize these values - use the exact names as they appear in commit authors
+  const me = 'kalyani'; // Your GitHub username/name as it appears in commits
+  const bro = 'tanmay'; // Your competitor's name as it appears in commits
+  
+  // You can also add alternative names/spellings if needed
+  const myAliases = ['kalyani', 'Kalyani Kulkarni'];
+  const broAliases = ['tanmay', 'Tanmay'];
 
   useEffect(() => {
     async function fetchData() {
@@ -79,9 +83,41 @@ export default function Home() {
   const scores = leaderboardData?.scores || {};
   const details = leaderboardData?.details || {};
   
-  const allParticipants = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
-  const myScore = scores[me] || 0;
-  const broScore = scores[bro] || 0;
+  // Calculate combined scores for aliases
+  const combinedScores = { ...scores };
+  
+  // Combine scores for all my aliases
+  let myScore = 0;
+  myAliases.forEach(alias => {
+    if (scores[alias]) {
+      myScore += scores[alias];
+    }
+  });
+  
+  // Combine scores for all bro aliases
+  let broScore = 0;
+  broAliases.forEach(alias => {
+    if (scores[alias]) {
+      broScore += scores[alias];
+    }
+  });
+  
+  // Create a cleaned up version of scores for display
+  const displayScores = { ...scores };
+  myAliases.forEach(alias => {
+    if (alias !== me && displayScores[alias]) {
+      delete displayScores[alias];
+    }
+  });
+  broAliases.forEach(alias => {
+    if (alias !== bro && displayScores[alias]) {
+      delete displayScores[alias];
+    }
+  });
+  if (myScore > 0) displayScores[me] = myScore;
+  if (broScore > 0) displayScores[bro] = broScore;
+  
+  const allParticipants = Object.keys(displayScores).sort((a, b) => displayScores[b] - displayScores[a]);
   const total = myScore + broScore || 1; // Avoid division by zero
   const myPercent = (myScore / total) * 100;
   const broPercent = (broScore / total) * 100;
@@ -143,7 +179,7 @@ export default function Home() {
                 <th className="py-2 px-4 text-left">Rank</th>
                 <th className="py-2 px-4 text-left">Name</th>
                 <th className="py-2 px-4 text-right">Points</th>
-                <th className="py-2 px-4 text-right">Challenges</th>
+                <th className="py-2 px-4 text-right">Commits</th>
               </tr>
             </thead>
             <tbody>
