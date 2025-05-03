@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 const REPO_OWNER = process.env.REPO_OWNER || 'lolidrk';
 const REPO_NAME = process.env.REPO_NAME || 'bragging-rights-log';
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN; ss Optional: for higher API rate limits
+
 
 const nameMapping = {
   'lolidrk': 'kalyani',
