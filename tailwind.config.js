@@ -1,4 +1,3 @@
-// tailwind.config.js - ONLY Tailwind configuration here
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [

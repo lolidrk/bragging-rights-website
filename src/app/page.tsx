@@ -1,4 +1,3 @@
-// src/app/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
@@ -24,19 +23,16 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Customize these values - use the exact names as they appear in commit authors
-  const me = 'kalyani'; // Your GitHub username/name as it appears in commits
-  const bro = 'tanmay'; // Your competitor's name as it appears in commits
+  const myGithub = 'lolidrk';
+  const broGithub = 'Tanmay-Kulkarni101';
   
-  // You can also add alternative names/spellings if needed
-  const myAliases = ['kalyani', 'Kalyani Kulkarni'];
-  const broAliases = ['tanmay', 'Tanmay'];
+  const myDisplayName = 'kalyani';
+  const broDisplayName = 'tanmay';
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        // Use relative URL for API route - works in both dev and production
         const res = await fetch('/api/leaderboard');
         
         if (!res.ok) {
@@ -83,41 +79,10 @@ export default function Home() {
   const scores = leaderboardData?.scores || {};
   const details = leaderboardData?.details || {};
   
-  // Calculate combined scores for aliases
-  const combinedScores = { ...scores };
+  const myScore = scores[myDisplayName] || 0;
+  const broScore = scores[broDisplayName] || 0;
   
-  // Combine scores for all my aliases
-  let myScore = 0;
-  myAliases.forEach(alias => {
-    if (scores[alias]) {
-      myScore += scores[alias];
-    }
-  });
-  
-  // Combine scores for all bro aliases
-  let broScore = 0;
-  broAliases.forEach(alias => {
-    if (scores[alias]) {
-      broScore += scores[alias];
-    }
-  });
-  
-  // Create a cleaned up version of scores for display
-  const displayScores = { ...scores };
-  myAliases.forEach(alias => {
-    if (alias !== me && displayScores[alias]) {
-      delete displayScores[alias];
-    }
-  });
-  broAliases.forEach(alias => {
-    if (alias !== bro && displayScores[alias]) {
-      delete displayScores[alias];
-    }
-  });
-  if (myScore > 0) displayScores[me] = myScore;
-  if (broScore > 0) displayScores[bro] = broScore;
-  
-  const allParticipants = Object.keys(displayScores).sort((a, b) => displayScores[b] - displayScores[a]);
+  const allParticipants = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
   const total = myScore + broScore || 1; // Avoid division by zero
   const myPercent = (myScore / total) * 100;
   const broPercent = (broScore / total) * 100;
@@ -139,12 +104,12 @@ export default function Home() {
             height={80}
             className="rounded-full border-4 border-white mb-4"
           />
-          <div className="text-2xl font-bold">{me}</div>
+          <div className="text-2xl font-bold">{myDisplayName}</div>
           <div className="text-5xl font-extrabold mt-2">{myScore}</div>
         </div>
         
         {/* Brother/Competitor */}
-        <div className={`p-6 rounded-xl ${bro && scores[bro] ? 'bg-red-600/90' : 'bg-gray-700/50'} shadow-xl flex flex-col items-center justify-center`}>
+        <div className={`p-6 rounded-xl ${broScore > 0 ? 'bg-red-600/90' : 'bg-gray-700/50'} shadow-xl flex flex-col items-center justify-center`}>
           <Image
             src="/bro-avatar.png"
             alt="Competitor Avatar"
@@ -152,7 +117,7 @@ export default function Home() {
             height={80}
             className="rounded-full border-4 border-white mb-4"
           />
-          <div className="text-2xl font-bold">{bro || "Challenger"}</div>
+          <div className="text-2xl font-bold">{broDisplayName}</div>
           <div className="text-5xl font-extrabold mt-2">{broScore}</div>
         </div>
       </div>
@@ -187,9 +152,9 @@ export default function Home() {
                 <tr 
                   key={participant} 
                   className={`border-b border-gray-700 ${
-                    participant === me 
+                    participant === myDisplayName 
                       ? 'bg-blue-900/30' 
-                      : participant === bro 
+                      : participant === broDisplayName 
                         ? 'bg-red-900/30' 
                         : ''
                   }`}

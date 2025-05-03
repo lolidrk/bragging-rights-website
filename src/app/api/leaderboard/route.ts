@@ -1,13 +1,17 @@
-// src/app/api/leaderboard/route.ts
 import { NextResponse } from 'next/server';
 
 const REPO_OWNER = process.env.REPO_OWNER || 'lolidrk';
 const REPO_NAME = process.env.REPO_NAME || 'bragging-rights-log';
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Optional: for higher API rate limits
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN; ss Optional: for higher API rate limits
+
+const nameMapping = {
+  'lolidrk': 'kalyani',
+  'Tanmay-Kulkarni101': 'tanmay'
+};
 
 export async function GET() {
   try {
-    const headers = GITHUB_TOKEN 
+    const headers = GITHUB_TOKEN
       ? { Authorization: `token ${GITHUB_TOKEN}` }
       : {};
     
@@ -23,27 +27,29 @@ export async function GET() {
     const details = {};
     
     commits.forEach(commit => {
-      const author = commit.commit.author.name;
+      const githubAuthor = commit.commit.author.name;
+      const displayAuthor = nameMapping[githubAuthor] || githubAuthor;
+      
       const message = commit.commit.message;
       const sha = commit.sha;
       const date = commit.commit.author.date;
       
       let points = 0;
-      if (/\[Easy]/i.test(message)) points = 1;
-      else if (/\[Medium]/i.test(message)) points = 2;
-      else if (/\[Hard]/i.test(message)) points = 3;
+      if (/\[Easy\]/i.test(message)) points = 1;
+      else if (/\[Medium\]/i.test(message)) points = 2;
+      else if (/\[Hard\]/i.test(message)) points = 3;
+      else return; // Skip this commit if no valid tag
       
-      if (!scores[author]) {
-        scores[author] = 0;
-        details[author] = [];
+      if (!scores[displayAuthor]) {
+        scores[displayAuthor] = 0;
+        details[displayAuthor] = [];
       }
       
-      scores[author] += points;
-      details[author].push({ message, sha, points, date });
+      scores[displayAuthor] += points;
+      details[displayAuthor].push({ message, sha, points, date });
     });
     
     console.log('🏆 Bragging Rights Leaderboard:', scores);
-    
     return NextResponse.json({ scores, details });
   } catch (error) {
     console.error('Error fetching leaderboard data:', error);
