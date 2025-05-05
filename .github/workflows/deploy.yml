@@ -1,14 +1,8 @@
-# .github/workflows/deploy.yml
 name: Deploy to Vercel
-
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  # Allow manual triggering
+  repository_dispatch:
+    types: [log-update]
   workflow_dispatch:
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
