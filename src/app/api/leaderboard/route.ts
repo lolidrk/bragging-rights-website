@@ -9,32 +9,49 @@ export async function GET() {
     const headers = GITHUB_TOKEN
       ? { Authorization: `token ${GITHUB_TOKEN}` }
       : {};
-
+    
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits?per_page=100`;
     const response = await fetch(url, { headers });
-
+    
     if (!response.ok) {
       throw new Error(`GitHub API error: ${response.status}`);
     }
-
+    
     const commits = await response.json();
     const scores: Record<string, number> = {};
     const details: Record<string, any[]> = {};
     const processedCommits: any[] = [];
-
-    commits.forEach(commit => {
+    
+    console.log(`Found ${commits.length} total commits`);
+    
+    commits.forEach((commit, index) => {
       const gitHubLogin = commit.author?.login;
+      const commitAuthorName = commit.commit.author.name;
       const message = commit.commit.message;
       const sha = commit.sha;
       const date = commit.commit.author.date;
-
-      if (!gitHubLogin) return;
-
+      
+      // Detailed logging for each commit
+      console.log(`Commit ${index + 1}:`, {
+        sha: sha.substring(0, 7),
+        gitHubLogin: gitHubLogin,
+        commitAuthorName: commitAuthorName,
+        message: message.split('\n')[0],
+        hasAuthor: !!commit.author,
+        authorObject: commit.author
+      });
+      
+      if (!gitHubLogin) {
+        console.log(`❌ Skipping commit ${sha.substring(0, 7)} - no GitHub login`);
+        return;
+      }
+      
       let points = 0;
       if (/\[Easy\]/i.test(message)) points = 1;
       else if (/\[Medium\]/i.test(message)) points = 2;
       else if (/\[Hard\]/i.test(message)) points = 3;
       else {
+        console.log(`📝 Non-scoring commit by ${gitHubLogin}: ${message.split('\n')[0]}`);
         processedCommits.push({
           sha: sha.substring(0, 7),
           author: gitHubLogin,
@@ -44,15 +61,17 @@ export async function GET() {
         });
         return;
       }
-
+      
       if (!scores[gitHubLogin]) {
         scores[gitHubLogin] = 0;
         details[gitHubLogin] = [];
       }
-
+      
       scores[gitHubLogin] += points;
       details[gitHubLogin].push({ message, sha, points, date });
-
+      
+      console.log(`✅ Scoring commit by ${gitHubLogin}: +${points} points for "${message.split('\n')[0]}"`);
+      
       processedCommits.push({
         sha: sha.substring(0, 7),
         author: gitHubLogin,
@@ -61,7 +80,10 @@ export async function GET() {
         date,
       });
     });
-
+    
+    console.log('🏆 Final scores:', scores);
+    console.log('📊 Users with details:', Object.keys(details));
+    
     return NextResponse.json({ scores, details, processedCommits });
   } catch (error) {
     console.error('Error fetching leaderboard data:', error);
