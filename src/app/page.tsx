@@ -39,7 +39,7 @@ export default function Home() {
     async function fetchData() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/leaderboard?ts=${Date.now()}`);
+        const res = await fetch(`/api/leaderboard?ts=${Date.now()}&nocache=${Math.random()}`);
 
         if (!res.ok) {
           throw new Error(`Error fetching data: ${res.status}`);

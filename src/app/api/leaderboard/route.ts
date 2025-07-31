@@ -11,13 +11,38 @@ export async function GET() {
       : {};
     
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits?per_page=100`;
-    const response = await fetch(url, { headers });
+    console.log(`🔍 Fetching commits from: ${url}`);
+    console.log(`📅 Current time: ${new Date().toISOString()}`);
+    console.log(`🔑 Using token: ${GITHUB_TOKEN ? 'Yes' : 'No'}`);
+    
+    const response = await fetch(url, { 
+      headers,
+      cache: 'no-store' // Force fresh data
+    });
+    
+    console.log(`📡 GitHub API Response Status: ${response.status}`);
+    console.log(`📦 Rate limit remaining: ${response.headers.get('x-ratelimit-remaining')}`);
+    console.log(`🔄 Rate limit reset: ${response.headers.get('x-ratelimit-reset')}`);
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ GitHub API Error: ${response.status} - ${errorText}`);
       throw new Error(`GitHub API error: ${response.status}`);
     }
     
     const commits = await response.json();
+    console.log(`📊 Total commits received: ${commits.length}`);
+    
+    // Log the first few commits to see what we're getting
+    commits.slice(0, 5).forEach((commit, i) => {
+      console.log(`Commit ${i + 1}:`, {
+        sha: commit.sha.substring(0, 7),
+        author_login: commit.author?.login,
+        author_name: commit.commit.author.name,
+        date: commit.commit.author.date,
+        message: commit.commit.message.split('\n')[0]
+      });
+    });
     const scores: Record<string, number> = {};
     const details: Record<string, any[]> = {};
     const processedCommits: any[] = [];
@@ -82,7 +107,7 @@ export async function GET() {
     });
     
     console.log('🏆 Final scores:', scores);
-    console.log('📊 Users with details is:', Object.keys(details));
+    console.log('📊 Users with details:', Object.keys(details));
     
     return NextResponse.json({ scores, details, processedCommits });
   } catch (error) {
