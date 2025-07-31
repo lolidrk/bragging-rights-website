@@ -45,20 +45,25 @@ export async function GET() {
         date: date
       });
       
-      if (!gitHubLogin) {
-        console.log(`❌ Skipping commit ${sha.substring(0, 7)} - no GitHub login`);
+      // Use GitHub login if available, otherwise use commit author name
+      const authorKey = gitHubLogin || commitAuthorName;
+      
+      if (!authorKey) {
+        console.log(`❌ Skipping commit ${sha.substring(0, 7)} - no author info at all`);
         return;
       }
+      
+      console.log(`✅ Using author: "${authorKey}" for commit ${sha.substring(0, 7)}`);
       
       let points = 0;
       if (/\[Easy\]/i.test(message)) points = 1;
       else if (/\[Medium\]/i.test(message)) points = 2;
       else if (/\[Hard\]/i.test(message)) points = 3;
       else {
-        console.log(`📝 Non-scoring commit by ${gitHubLogin}: ${message.split('\n')[0]}`);
+        console.log(`📝 Non-scoring commit by ${authorKey}: ${message.split('\n')[0]}`);
         processedCommits.push({
           sha: sha.substring(0, 7),
-          author: gitHubLogin,
+          author: authorKey,
           message: message.split('\n')[0],
           points: 0,
           date,
@@ -66,19 +71,19 @@ export async function GET() {
         return;
       }
       
-      if (!scores[gitHubLogin]) {
-        scores[gitHubLogin] = 0;
-        details[gitHubLogin] = [];
+      if (!scores[authorKey]) {
+        scores[authorKey] = 0;
+        details[authorKey] = [];
       }
       
-      scores[gitHubLogin] += points;
-      details[gitHubLogin].push({ message, sha, points, date });
+      scores[authorKey] += points;
+      details[authorKey].push({ message, sha, points, date });
       
-      console.log(`✅ Scoring commit by ${gitHubLogin}: +${points} points for "${message.split('\n')[0]}"`);
+      console.log(`✅ Scoring commit by ${authorKey}: +${points} points for "${message.split('\n')[0]}"`);
       
       processedCommits.push({
         sha: sha.substring(0, 7),
-        author: gitHubLogin,
+        author: authorKey,
         message: message.split('\n')[0],
         points,
         date,
