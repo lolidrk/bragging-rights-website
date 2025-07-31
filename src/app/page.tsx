@@ -16,6 +16,7 @@ type LeaderboardData = {
     [author: string]: CommitDetail[];
   };
   processedCommits?: any[];
+  debugInfo?: any[];
 };
 
 type DebugCommit = {
@@ -147,16 +148,42 @@ export default function Home() {
             </div>
           </div>
 
-          {debugData.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Recent Commits Processed:</h3>
-              <div className="bg-gray-900 p-3 rounded max-h-64 overflow-y-auto">
-                {debugData.slice(0, 10).map((commit, i) => (
-                  <div key={i} className="mb-2 p-2 bg-gray-800 rounded text-sm">
-                    <div><strong>SHA:</strong> {commit.sha}</div>
-                    <div><strong>Author:</strong> {commit.gitHubLogin || 'Unknown'}</div>
-                    <div><strong>Message:</strong> {commit.message}</div>
-                    <div><strong>Points:</strong> <span className={commit.points > 0 ? 'text-green-400' : 'text-gray-400'}>{commit.points}</span></div>
+          {leaderboardData?.debugInfo && leaderboardData.debugInfo.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-2">🔍 Raw Commit Data from GitHub API:</h3>
+              <div className="bg-gray-900 p-3 rounded max-h-96 overflow-y-auto">
+                {leaderboardData.debugInfo.slice(0, 10).map((commit, i) => (
+                  <div key={i} className="mb-3 p-3 bg-gray-800 rounded text-sm border-l-4 border-blue-500">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div><strong>SHA:</strong> {commit.sha}</div>
+                      <div><strong>Date:</strong> {new Date(commit.date).toLocaleDateString()}</div>
+                      <div><strong>GitHub Login:</strong> 
+                        <span className={commit.gitHubLogin ? 'text-green-400' : 'text-red-400'}>
+                          {commit.gitHubLogin || '❌ NULL'}
+                        </span>
+                      </div>
+                      <div><strong>Commit Author Name:</strong> 
+                        <span className="text-yellow-400">{commit.commitAuthorName}</span>
+                      </div>
+                      <div><strong>Author Key Used:</strong> 
+                        <span className="text-blue-400">{commit.authorKeyUsed}</span>
+                      </div>
+                      <div><strong>Has Author Object:</strong> 
+                        <span className={commit.hasAuthorObject ? 'text-green-400' : 'text-red-400'}>
+                          {commit.hasAuthorObject ? '✅ Yes' : '❌ No'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-2"><strong>Message:</strong> {commit.message}</div>
+                    <div className="mt-2"><strong>Email:</strong> <span className="text-gray-400">{commit.commitAuthorEmail}</span></div>
+                    {commit.fullAuthorObject && (
+                      <div className="mt-2">
+                        <strong>Full Author Object:</strong>
+                        <pre className="text-xs bg-gray-700 p-2 rounded mt-1 overflow-x-auto">
+                          {JSON.stringify(commit.fullAuthorObject, null, 2)}
+                        </pre>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

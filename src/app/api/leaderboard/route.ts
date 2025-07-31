@@ -46,6 +46,7 @@ export async function GET() {
     const scores: Record<string, number> = {};
     const details: Record<string, any[]> = {};
     const processedCommits: any[] = [];
+    const debugInfo: any[] = []; // Add debug info array
     
     console.log(`Found ${commits.length} total commits`);
     
@@ -87,19 +88,20 @@ export async function GET() {
         return;
       }
       
-      if (!scores[gitHubLogin]) {
-        scores[gitHubLogin] = 0;
-        details[gitHubLogin] = [];
+      if (!scores[authorKey]) {
+        scores[authorKey] = 0;
+        details[authorKey] = [];
+        console.log(`🆕 Created new entry for: ${authorKey}`);
       }
       
-      scores[gitHubLogin] += points;
-      details[gitHubLogin].push({ message, sha, points, date });
+      scores[authorKey] += points;
+      details[authorKey].push({ message, sha, points, date });
       
-      console.log(`✅ Scoring commit by ${gitHubLogin}: +${points} points for "${message.split('\n')[0]}"`);
+      console.log(`🏆 Added ${points} points to ${authorKey} for: "${message.split('\n')[0]}"`);
       
       processedCommits.push({
         sha: sha.substring(0, 7),
-        author: gitHubLogin,
+        author: authorKey,
         message: message.split('\n')[0],
         points,
         date,
@@ -109,7 +111,12 @@ export async function GET() {
     console.log('🏆 Final scores:', scores);
     console.log('📊 Users with details:', Object.keys(details));
     
-    return NextResponse.json({ scores, details, processedCommits });
+    return NextResponse.json({ 
+      scores, 
+      details, 
+      processedCommits,
+      debugInfo: debugInfo.slice(0, 20) // Include debug info (first 20 commits)
+    });
   } catch (error) {
     console.error('💥 FULL ERROR:', error);
     console.error('💥 ERROR MESSAGE:', error instanceof Error ? error.message : 'Unknown error');
