@@ -19,7 +19,7 @@ export async function GET() {
 
     const commits = await response.json();
     const scores: Record<string, number> = {};
-    const details: Record<string, any[]> = [];
+    const details: Record<string, any[]> = {};
     const processedCommits: any[] = [];
 
     commits.forEach(commit => {
