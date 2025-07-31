@@ -194,18 +194,36 @@ export default function Home() {
 
       {/* Dynamic Scorecards */}
       <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-center mb-10">
-        {allParticipants.map((name, index) => (
-          <div
-            key={name}
-            className={`p-6 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 shadow-xl flex flex-col items-center justify-center`}
-          >
-            <div className="w-20 h-20 bg-white rounded-full border-4 border-white mb-4 flex items-center justify-center">
-              <span className="text-2xl">👤</span>
+        {allParticipants.map((name, index) => {
+          // Map names to proper image sources
+          let imageSrc = '/default-avatar.png';
+          if (name === 'lolidrk' || name === 'kalyani') {
+            imageSrc = '/me-avatar.png';
+          } else if (name === 'Tanmay Kulkarni' || name === 'Tanmay-Kulkarni101' || name === 'tanmay') {
+            imageSrc = '/bro-avatar.png';
+          }
+
+          return (
+            <div
+              key={name}
+              className={`p-6 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 shadow-xl flex flex-col items-center justify-center`}
+            >
+              <img
+                src={imageSrc}
+                alt={`${name} Avatar`}
+                width={80}
+                height={80}
+                className="rounded-full border-4 border-white mb-4"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/default-avatar.png';
+                }}
+              />
+              <div className="text-2xl font-bold">{name}</div>
+              <div className="text-5xl font-extrabold mt-2">{scores[name]}</div>
             </div>
-            <div className="text-2xl font-bold">{name}</div>
-            <div className="text-5xl font-extrabold mt-2">{scores[name]}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Tug of war bar */}
