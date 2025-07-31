@@ -82,7 +82,7 @@ export async function GET() {
     });
     
     console.log('🏆 Final scores:', scores);
-    console.log('📊 Users with details:', Object.keys(details));
+    console.log('📊 Users with details is:', Object.keys(details));
     
     return NextResponse.json({ scores, details, processedCommits });
   } catch (error) {
