@@ -111,9 +111,15 @@ export async function GET() {
     
     return NextResponse.json({ scores, details, processedCommits });
   } catch (error) {
-    console.error('Error fetching leaderboard data:', error);
+    console.error('💥 FULL ERROR:', error);
+    console.error('💥 ERROR MESSAGE:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('💥 ERROR STACK:', error instanceof Error ? error.stack : 'No stack');
+    
     return NextResponse.json(
-      { error: 'Failed to fetch leaderboard data' },
+      { 
+        error: 'Failed to fetch leaderboard data',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

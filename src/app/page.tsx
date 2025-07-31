@@ -42,7 +42,8 @@ export default function Home() {
         const res = await fetch(`/api/leaderboard?ts=${Date.now()}&nocache=${Math.random()}`);
 
         if (!res.ok) {
-          throw new Error(`Error fetching data: ${res.status}`);
+          const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(`Error fetching data: ${res.status} - ${errorData.error || 'Unknown error'} - ${errorData.details || ''}`);
         }
 
         const data = await res.json();
