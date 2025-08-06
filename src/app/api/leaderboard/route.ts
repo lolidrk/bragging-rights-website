@@ -10,94 +10,172 @@ export async function GET() {
       ? { Authorization: `token ${GITHUB_TOKEN}` }
       : {};
     
-    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits?per_page=100`;
-    const response = await fetch(url, { headers });
+    // First, get the current file tree
+    const treeUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/git/trees/main?recursive=1`;
+    const treeResponse = await fetch(treeUrl, { headers });
     
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
+    if (!treeResponse.ok) {
+      throw new Error(`GitHub API error: ${treeResponse.status}`);
     }
     
-    const commits = await response.json();
+    const tree = await treeResponse.json();
     const scores: Record<string, number> = {};
     const details: Record<string, any[]> = {};
-    const processedCommits: any[] = [];
-    const debugInfo: any[] = []; // Just add this line
+    const processedFiles: any[] = [];
+    const debugInfo: any[] = [];
     
-    console.log(`Found ${commits.length} total commits`);
+    console.log(`Found ${tree.tree.length} total items in repository`);
     
-    commits.forEach((commit, index) => {
-      const gitHubLogin = commit.author?.login;
-      const commitAuthorName = commit.commit.author.name;
-      const commitAuthorEmail = commit.commit.author.email;
-      const message = commit.commit.message;
-      const sha = commit.sha;
-      const date = commit.commit.author.date;
-      
-      // Add debug info - just add this block
-      debugInfo.push({
-        sha: sha.substring(0, 7),
-        gitHubLogin: gitHubLogin,
-        commitAuthorName: commitAuthorName,
-        commitAuthorEmail: commitAuthorEmail,
-        message: message.split('\n')[0],
-        hasAuthorObject: !!commit.author,
-        fullAuthorObject: commit.author,
-        date: date
-      });
-      
-      // Use GitHub login if available, otherwise use commit author name
-      const authorKey = gitHubLogin || commitAuthorName;
-      
-      if (!authorKey) {
-        console.log(`❌ Skipping commit ${sha.substring(0, 7)} - no author info at all`);
-        return;
-      }
-      
-      console.log(`✅ Using author: "${authorKey}" for commit ${sha.substring(0, 7)}`);
-      
-      let points = 0;
-      if (/\[Easy\]/i.test(message)) points = 1;
-      else if (/\[Medium\]/i.test(message)) points = 2;
-      else if (/\[Hard\]/i.test(message)) points = 3;
-      else {
-        console.log(`📝 Non-scoring commit by ${authorKey}: ${message.split('\n')[0]}`);
-        processedCommits.push({
-          sha: sha.substring(0, 7),
-          author: authorKey,
-          message: message.split('\n')[0],
-          points: 0,
-          date,
-        });
-        return;
-      }
-      
-      if (!scores[authorKey]) {
-        scores[authorKey] = 0;
-        details[authorKey] = [];
-      }
-      
-      scores[authorKey] += points;
-      details[authorKey].push({ message, sha, points, date });
-      
-      console.log(`✅ Scoring commit by ${authorKey}: +${points} points for "${message.split('\n')[0]}"`);
-      
-      processedCommits.push({
-        sha: sha.substring(0, 7),
-        author: authorKey,
-        message: message.split('\n')[0],
-        points,
-        date,
-      });
+    // Get all files in user folders
+    const userFiles = tree.tree.filter((item) => {
+      if (item.type !== 'blob') return false;
+      const pathParts = item.path.split('/');
+      return pathParts.length >= 2; // Must be in a user folder
     });
+    
+    console.log(`Found ${userFiles.length} files in user folders`);
+    
+    // For each file, get its latest commit
+    for (const file of userFiles) {
+      try {
+        const pathParts = file.path.split('/');
+        const userName = pathParts[0];
+        const fileName = pathParts[pathParts.length - 1];
+        
+        // Skip common non-code files
+        const skipExtensions = ['.md', '.txt', '.gitignore', '.yml', '.yaml'];
+        const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+        
+        if (skipExtensions.includes(fileExtension.toLowerCase())) {
+          debugInfo.push({
+            path: file.path,
+            reason: `Skipped file type: ${fileExtension}`,
+            type: 'skipped'
+          });
+          continue;
+        }
+        
+        // Get commits for this specific file (latest first)
+        const commitsUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits?path=${encodeURIComponent(file.path)}&per_page=1`;
+        const commitResponse = await fetch(commitsUrl, { headers });
+        
+        if (!commitResponse.ok) {
+          console.log(`⚠️ Could not get commits for ${file.path}`);
+          continue;
+        }
+        
+        const commits = await commitResponse.json();
+        
+        if (commits.length === 0) {
+          debugInfo.push({
+            path: file.path,
+            reason: 'No commits found',
+            type: 'error'
+          });
+          continue;
+        }
+        
+        // Get the latest commit for this file
+        const latestCommit = commits[0];
+        const message = latestCommit.commit.message;
+        const sha = latestCommit.sha;
+        const date = latestCommit.commit.author.date;
+        const gitHubLogin = latestCommit.author?.login;
+        const commitAuthorName = latestCommit.commit.author.name;
+        
+        // Use GitHub login if available, otherwise use commit author name
+        const commitAuthor = gitHubLogin || commitAuthorName;
+        
+        // Determine points from commit message
+        let points = 0;
+        let difficulty = '';
+        
+        if (/\[Easy\]/i.test(message)) {
+          points = 1;
+          difficulty = 'Easy';
+        } else if (/\[Medium\]/i.test(message)) {
+          points = 2;
+          difficulty = 'Medium';
+        } else if (/\[Hard\]/i.test(message)) {
+          points = 3;
+          difficulty = 'Hard';
+        }
+        
+        // Initialize user if not exists
+        if (!scores[userName]) {
+          scores[userName] = 0;
+          details[userName] = [];
+        }
+        
+        // Add debug info
+        debugInfo.push({
+          path: file.path,
+          userName: userName,
+          commitAuthor: commitAuthor,
+          fileName: fileName,
+          points: points,
+          difficulty: difficulty || 'No difficulty tag',
+          message: message.split('\n')[0],
+          sha: sha.substring(0, 7),
+          date: date,
+          type: points > 0 ? 'scored' : 'unscored'
+        });
+        
+        // Add to processed files
+        processedFiles.push({
+          path: file.path,
+          folderOwner: userName,
+          commitAuthor: commitAuthor,
+          fileName: fileName,
+          points: points,
+          difficulty: difficulty || 'Unscored',
+          message: message.split('\n')[0],
+          sha: sha.substring(0, 7),
+          date: date
+        });
+        
+        if (points > 0) {
+          scores[userName] += points;
+          details[userName].push({
+            path: file.path,
+            fileName: fileName,
+            points: points,
+            difficulty: difficulty,
+            message: message.split('\n')[0],
+            sha: sha,
+            date: date,
+            commitAuthor: commitAuthor
+          });
+          
+          console.log(`✅ Scoring file by ${userName}: +${points} points for "${fileName}" (${difficulty}) - commit by ${commitAuthor}`);
+        } else {
+          console.log(`📝 Non-scoring file by ${userName}: "${fileName}" - no difficulty tag in latest commit`);
+        }
+        
+        // Small delay to avoid hitting rate limits
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+      } catch (error) {
+        console.error(`Error processing file ${file.path}:`, error);
+        debugInfo.push({
+          path: file.path,
+          reason: `Error: ${error.message}`,
+          type: 'error'
+        });
+      }
+    }
     
     console.log('🏆 Final scores:', scores);
     console.log('📊 Users with details:', Object.keys(details));
+    console.log(`📁 Processed ${processedFiles.length} files total`);
     
     return NextResponse.json({ 
       scores, 
       details, 
-      processedCommits,
-      debugInfo: debugInfo.slice(0, 20) // Just add this line
+      processedFiles,
+      debugInfo: debugInfo.slice(0, 30),
+      totalFiles: userFiles.length,
+      scoredFiles: processedFiles.filter(f => f.points > 0).length
     });
   } catch (error) {
     console.error('Error fetching leaderboard data:', error);
