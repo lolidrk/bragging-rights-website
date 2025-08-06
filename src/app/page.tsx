@@ -201,9 +201,9 @@ export default function Home() {
         {allParticipants.map((folderName, index) => {
           // Map folder names to proper image sources
           let imageSrc = '/default-avatar.png';
-          if (folderName === 'lolidrk' || folderName === 'kalyani') {
+          if (folderName === 'lolidrk' || folderName === 'kalyani' || folderName === 'kalyanii') {
             imageSrc = '/me-avatar.png';
-          } else if (folderName === 'tanmay' || folderName === 'Tanmay-Kulkarni101' || folderName === 'tanmay-kulkarni') {
+          } else if (folderName === 'tanmay' || folderName === 'Tanmay-Kulkarni101' || folderName === 'tanmay-kulkarni' || folderName === 'Dada') {
             imageSrc = '/bro-avatar.png';
           }
 
